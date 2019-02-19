@@ -1,7 +1,7 @@
-import bitarray
 import random
 import numpy as np
 import math
+from operators import *
 
 
 class _BaseGene(object):
@@ -61,7 +61,84 @@ class BitarrayGene(_BaseGene):
         self._n_bits = n_bits
 
     def random_gene(self):
-        return bitarray.bitarray('0' * self._n_bits, endian='little').to01()
+        return ''.join([random.choice(['0', '1']) for _ in range(self._n_bits)])
+
+
+class DenaryGeneFloat(_BaseGene):
+
+    def __init__(self, limits=(None, None), n_bits_exponent=4, n_bits_fraction=4, signed=False):
+        self.limits = limits
+        self._n_bits_exponent = n_bits_exponent
+        self._n_bits_fraction = n_bits_fraction
+        self._n_bits = n_bits_exponent + n_bits_fraction if n_bits_fraction else n_bits_exponent
+        self._n_bits += 1 if signed else 0
+        self._signed = signed
+
+    def random_gene(self):
+        _random = ''.join([random.choice(['0', '1']) for _ in range(self._n_bits)])
+        if self.limits[0] is not None and self.limits[1] is not None:
+            while not (self.limits[0] <= self.transform(_random) <= self.limits[1]):
+                _random = ''.join([random.choice(['0', '1']) for _ in range(self._n_bits)])
+
+        elif self.limits[1] is not None and self.limits[0] is None:
+            while not self.transform(_random) <= self.limits[1]:
+                _random = ''.join([random.choice(['0', '1']) for _ in range(self._n_bits)])
+
+        elif self.limits[0] is not None and self.limits[1] is None:
+            while not self.transform(_random) >= self.limits[0]:
+                _random = ''.join([random.choice(['0', '1']) for _ in range(self._n_bits)])
+        else:
+            _random = ''.join([random.choice(['0', '1']) for _ in range(self._n_bits)])
+        return _random
+
+    def transform(self, _gene):
+        exp_idx = 0
+        sign = 1
+        if self._signed:
+            if _gene[0] is "0":
+                pass
+            else:
+                sign = -1
+            exp_idx = 1
+        exp = 0
+        for idx, bit in enumerate(_gene[exp_idx:exp_idx + self._n_bits_exponent]):
+            if bit is "0":
+                pass
+            else:
+                exp += 2 ** idx
+        frac = 0
+        if self._n_bits_fraction is None:
+            pass
+        else:
+            for idx, bit in enumerate(
+                    _gene[-self._n_bits_fraction:]):
+                if bit is "0":
+                    pass
+                else:
+                    frac += 2 ** -(idx + 1)
+        return sign * (exp + frac)
+
+    # Inherited mutate member function must be over-written for linear boundaries.
+    def mutate(self, _gene):
+        """
+        :param _gene:
+        :return:
+        """
+        mutated = _BaseGene.mutate(_gene)
+        if self.limits[1] and self.limits[0]:
+            while not (self.limits[0] <= self.transform(mutated) <= self.limits[1]):
+                mutated = _BaseGene.mutate(_gene)
+
+        elif self.limits[1] and not self.limits[0]:
+            while not self.transform(mutated) <= self.limits[1]:
+                mutated = _BaseGene.mutate(_gene)
+
+        elif self.limits[0] and not self.limits[1]:
+            while not self.transform(mutated) >= self.limits[0]:
+                mutated = _BaseGene.mutate(_gene)
+        else:
+            return _BaseGene.mutate(_gene)
+        return mutated
 
 
 class LinearRangeGene(_BaseGene):
@@ -105,4 +182,4 @@ class LinearRangeGene(_BaseGene):
         return _format.format(random.randint(0, self._num))
 
     def transform(self, _gene):
-        return self._linear_space[int(_gene, 2)-1]
+        return self._linear_space[int(_gene, 2) - 1]
