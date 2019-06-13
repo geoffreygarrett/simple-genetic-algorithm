@@ -1,7 +1,7 @@
 import random
 import numpy as np
 import math
-from operators import *
+from .operators import *
 
 
 class _BaseGene(object):
