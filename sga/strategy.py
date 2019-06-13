@@ -6,8 +6,7 @@ class EvolutionaryStrategy(object):
     def __init__(self, population, fitness_function, crossover_function, selection_function,
                  termination_criteria, mutation_rate, colonize=False):
         """
-
-        :param population:  asd asd asd
+        :param population:
         :param fitness_function:
         :param crossover_function:
         :param selection_function:
@@ -23,10 +22,10 @@ class EvolutionaryStrategy(object):
         self.mutation_rate = mutation_rate
         self.generation_number = 0
         self.children = None
+        self._current_population_fitness = None
 
     def perform_crossover(self, population):
         """
-
         :param population:
         :return:
         """
@@ -38,21 +37,29 @@ class EvolutionaryStrategy(object):
     def perform_selection(self, population):
         population.contestants = population.selection(self.selection_function, self.fitness_function)
 
-    def get_population_fitness(self):
+    @property
+    def population_fitness(self):
+        return self._current_population_fitness
+
+    @population_fitness.setter
+    def population_fitness(self, x):
+        self._current_population_fitness = x
+
+    def calculate_current_population_fitness(self):
         return self.population.fitness(self.fitness_function)
 
     def get_average_fitness(self):
-        return float(np.mean(self.get_population_fitness()))
+        return float(np.mean(self.population_fitness))
 
     def get_maximum_fitness(self):
-        return np.max(self.get_population_fitness())
+        return np.max(self.population_fitness)
 
     def get_minimum_fitness(self):
-        return np.min(self.get_population_fitness())
+        return np.min(self.population_fitness)
 
     def get_fittest_chromosome(self):
         return list(set(np.array(self.population.contestants)[
-                            np.array(self.get_population_fitness()) == self.get_maximum_fitness()]))
+                            np.array(self.population_fitness) == self.get_maximum_fitness()]))
 
     def get_fittest_solution(self):
         return list(set([tuple(self.population._chromosome.parameters(c)) for c in self.get_fittest_chromosome()]))
@@ -61,10 +68,19 @@ class EvolutionaryStrategy(object):
         if return_log:
             log = []
 
-        while self.termination_criteria(self.get_population_fitness(), self.generation_number) is False:
+        self.population_fitness = self.calculate_current_population_fitness()
+        while self.termination_criteria(self.population_fitness, self.generation_number) is False:
+
+            # Make children from first initial generation of (16)
             self.children = self.perform_crossover(self.population)
+
+            # Potentially mutate all children.
             self.perform_mutation(self.children)
+
+            # Add list of children to initial population.
             self.population.contestants += self.children.contestants
+
+            #
             self.perform_selection(self.population)
             self.generation_number += 1
             if verbose:
@@ -93,6 +109,7 @@ class EvolutionaryStrategy(object):
                             np.round(self.get_average_fitness(), 3),
                             self.get_fittest_chromosome()[0],
                             np.round(self.get_fittest_solution()[0], 3)])
+            self.population_fitness = self.calculate_current_population_fitness()
 
         if verbose:
             print("\n" + "--" * 100 + "\n")
