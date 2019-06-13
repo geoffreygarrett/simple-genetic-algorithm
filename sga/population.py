@@ -1,4 +1,4 @@
-from chromosome import *
+from .chromosome import *
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import figure
@@ -12,6 +12,10 @@ class Population(object):
         self._n = n
         self._chromosome = chromosome_class
         self._population = [self._chromosome.random_chromosome() for _ in range(m)]
+
+    @property
+    def population(self):
+        return self._population
 
     def fitness(self, fitness_function, *args):
         return [fitness_function(*self._chromosome.parameters(member), *args) for member in self._population]
@@ -27,7 +31,6 @@ class Population(object):
                 self._population[idx]
 
     # def selection_function(m, contestants, fitness, *args):
-
     def selection(self, selection_function, fitness_function, *args):
         return selection_function(self.m, self.contestants, self.fitness(fitness_function), *args)
 
@@ -47,3 +50,24 @@ class Population(object):
     def contestants(self, x):
         self._population = x
 
+
+class BatchPopulation(Population):
+
+    def __init__(self, m: int, n: int, chromosome_class: Chromosome):
+        super().__init__(m, n, chromosome_class)
+
+    def fitness(self, fitness_function, *args):
+        SINGLE_THREAD = True
+
+        def single_thread_fitness():
+            return [fitness_function(*self._chromosome.parameters(member), *args) for member in
+                   self._population]
+
+        def batch_thread_fitness():
+            parameters = [self._chromosome.parameters(member) for member in self._population]
+            return None
+
+        fitness = single_thread_fitness() if SINGLE_THREAD else batch_thread_fitness()
+        return fitness
+
+        # return [fitness_function(*self._chromosome.parameters(member), *args) for member in self._population]
