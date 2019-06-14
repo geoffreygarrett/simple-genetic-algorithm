@@ -38,7 +38,7 @@ class EvolutionaryStrategy(object):
     def perform_selection(self, population):
         idx_selected, selected = population.selection(self.selection_function)
         population.contestants = list(selected)
-        population.fitness = list(np.array(population.fitness))
+        population.fitness = list(np.array(population.fitness)[idx_selected])
 
     @property
     def population_fitness(self):
@@ -71,15 +71,17 @@ class EvolutionaryStrategy(object):
         if return_log:
             log = []
 
-        self.population_fitness = self.population.calculate_fitness(self.fitness_function)
+        self.population_fitness = self.population.calculate_fitness(self.fitness_function, archive=self._archive)
 
-        self._archive.append(pd.DataFrame(columns=self._archive.columns, data=[self.population_fitness,
-                                                                               self.population.contestants]))
+        self._archive = self._archive.append(pd.DataFrame({
+            "fitness": self.population_fitness,
+            "chromosome": self.population.contestants
+        }))
 
         while self.termination_criteria(self.population_fitness, self.generation_number) is False:
 
             # Make children from first initial generation of (16)
-            self.children = self.perform_crossover(self.population, self._archive)
+            self.children = self.perform_crossover(self.population)
 
             # Potentially mutate all children.
             self.perform_mutation(self.children)
@@ -88,10 +90,14 @@ class EvolutionaryStrategy(object):
             self.population.contestants += self.children.contestants
 
             # Calculate and add the children fitness to population list.
-            self.population_fitness += self.children.calculate_fitness(self.fitness_function)
+            self.population_fitness += self.children.calculate_fitness(self.fitness_function, archive=self._archive)
+
+            self.population.fitness = self.population_fitness
 
             # Comment.
             self.perform_selection(self.population)
+
+            self.population_fitness = self.population.fitness
 
             # Increase gen count.
             self.generation_number += 1
@@ -123,10 +129,10 @@ class EvolutionaryStrategy(object):
                             self.get_fittest_chromosome()[0],
                             np.round(self.get_fittest_solution()[0], 3)])
 
-            self.population_fitness = self.calculate_current_population_fitness()
-
-            self._archive.append(pd.DataFrame(columns=self._archive.columns, data=[self.population_fitness,
-                                                                                   self.population.contestants]))
+            self._archive = self._archive.append(pd.DataFrame({
+                "fitness": self.population_fitness,
+                "chromosome": self.population.contestants
+            })).drop_duplicates()
 
         if verbose:
             print("\n" + "--" * 100 + "\n")
