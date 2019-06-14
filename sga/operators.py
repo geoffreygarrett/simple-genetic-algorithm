@@ -92,17 +92,18 @@ class SelectionOperator:
 
     @staticmethod
     def supremacy(m, contestants, fitness):
-        return list(np.array(contestants)[np.argpartition(np.array(fitness), -m)[-m:]])
+        return np.argpartition(np.array(fitness), -m)[-m:], np.array(contestants)[
+            np.argpartition(np.array(fitness), -m)[-m:]]
 
     @staticmethod
     def random(m, contestants, fitness):
+        # TODO: Update for idx return. (BROKEN)
         # used = None
         # assert fitness is not used
         return list(np.random.choice(contestants, m))
 
 
 class CrossoverOperator:
-
     @staticmethod
     def random_polygamous(parents, n_children):
         gene_lst = []

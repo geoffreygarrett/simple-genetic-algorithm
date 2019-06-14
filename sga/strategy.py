@@ -23,19 +23,22 @@ class EvolutionaryStrategy(object):
         self.generation_number = 0
         self.children = None
         self._current_population_fitness = None
+        self._archive = pd.DataFrame(columns=["fitness", "chromosome"])
 
-    def perform_crossover(self, population):
+    def perform_crossover(self, population, *args):
         """
         :param population:
         :return:
         """
-        return population.crossover(self.crossover_function)
+        return population.crossover(self.crossover_function, *args)
 
     def perform_mutation(self, population):
         population.mutate(self.mutation_rate)
 
     def perform_selection(self, population):
-        population.contestants = population.selection(self.selection_function, self.fitness_function)
+        idx_selected, selected = population.selection(self.selection_function)
+        population.contestants = list(selected)
+        population.fitness = list(np.array(population.fitness))
 
     @property
     def population_fitness(self):
@@ -45,8 +48,8 @@ class EvolutionaryStrategy(object):
     def population_fitness(self, x):
         self._current_population_fitness = x
 
-    def calculate_current_population_fitness(self):
-        return self.population.fitness(self.fitness_function)
+    # def calculate_current_population_fitness(self):
+    #     return self.population.fitness(self.fitness_function)
 
     def get_average_fitness(self):
         return float(np.mean(self.population_fitness))
@@ -68,11 +71,15 @@ class EvolutionaryStrategy(object):
         if return_log:
             log = []
 
-        self.population_fitness = self.calculate_current_population_fitness()
+        self.population_fitness = self.population.calculate_fitness(self.fitness_function)
+
+        self._archive.append(pd.DataFrame(columns=self._archive.columns, data=[self.population_fitness,
+                                                                               self.population.contestants]))
+
         while self.termination_criteria(self.population_fitness, self.generation_number) is False:
 
             # Make children from first initial generation of (16)
-            self.children = self.perform_crossover(self.population)
+            self.children = self.perform_crossover(self.population, self._archive)
 
             # Potentially mutate all children.
             self.perform_mutation(self.children)
@@ -80,9 +87,15 @@ class EvolutionaryStrategy(object):
             # Add list of children to initial population.
             self.population.contestants += self.children.contestants
 
-            #
+            # Calculate and add the children fitness to population list.
+            self.population_fitness += self.children.calculate_fitness(self.fitness_function)
+
+            # Comment.
             self.perform_selection(self.population)
+
+            # Increase gen count.
             self.generation_number += 1
+
             if verbose:
                 print("GEN: ",
                       str(self.generation_number).ljust(5),
@@ -109,7 +122,11 @@ class EvolutionaryStrategy(object):
                             np.round(self.get_average_fitness(), 3),
                             self.get_fittest_chromosome()[0],
                             np.round(self.get_fittest_solution()[0], 3)])
+
             self.population_fitness = self.calculate_current_population_fitness()
+
+            self._archive.append(pd.DataFrame(columns=self._archive.columns, data=[self.population_fitness,
+                                                                                   self.population.contestants]))
 
         if verbose:
             print("\n" + "--" * 100 + "\n")

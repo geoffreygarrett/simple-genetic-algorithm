@@ -12,12 +12,17 @@ class Population(object):
         self._n = n
         self._chromosome = chromosome_class
         self._population = [self._chromosome.random_chromosome() for _ in range(m)]
+        self._current_fitness = None
 
     @property
     def population(self):
         return self._population
 
-    def fitness(self, fitness_function, *args):
+    @property
+    def fitness(self):
+        return self._current_fitness
+
+    def calculate_fitness(self, fitness_function, *args):
         return [fitness_function(*self._chromosome.parameters(member), *args) for member in self._population]
 
     def crossover(self, crossover_function, *args):
@@ -31,8 +36,9 @@ class Population(object):
                 self._population[idx]
 
     # def selection_function(m, contestants, fitness, *args):
-    def selection(self, selection_function, fitness_function, *args):
-        return selection_function(self.m, self.contestants, self.fitness(fitness_function), *args)
+    def selection(self, selection_function, *args):
+        idx_selected, selected = selection_function(self.m, self.contestants, self.fitness, *args)
+        return idx_selected, selected
 
     @property
     def m(self):
@@ -56,7 +62,7 @@ class BatchPopulation(Population):
     def __init__(self, m: int, n: int, chromosome_class: Chromosome):
         super().__init__(m, n, chromosome_class)
 
-    def fitness(self, fitness_function, *args):
+    def calculate_fitness(self, fitness_function, *args):
         SINGLE_THREAD = True
 
         def single_thread_fitness():
