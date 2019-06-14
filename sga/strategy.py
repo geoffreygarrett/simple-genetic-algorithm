@@ -67,11 +67,11 @@ class EvolutionaryStrategy(object):
     def get_fittest_solution(self):
         return list(set([tuple(self.population._chromosome.parameters(c)) for c in self.get_fittest_chromosome()]))
 
-    def evolve(self, verbose=False, return_log=False):
+    def evolve(self, verbose=False, return_log=False, *kwargs):
         if return_log:
             log = []
 
-        self.population_fitness = self.population.calculate_fitness(self.fitness_function, archive=self._archive)
+        self.population_fitness = self.population.calculate_fitness(self.fitness_function, archive=self._archive, **kwargs)
 
         self._archive = self._archive.append(pd.DataFrame({
             "fitness": self.population_fitness,
@@ -90,7 +90,7 @@ class EvolutionaryStrategy(object):
             self.population.contestants += self.children.contestants
 
             # Calculate and add the children fitness to population list.
-            self.population_fitness += self.children.calculate_fitness(self.fitness_function, archive=self._archive)
+            self.population_fitness += self.children.calculate_fitness(self.fitness_function, archive=self._archive, **kwargs)
 
             self.population.fitness = self.population_fitness
 
