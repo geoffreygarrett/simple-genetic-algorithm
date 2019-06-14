@@ -67,7 +67,7 @@ class EvolutionaryStrategy(object):
     def get_fittest_solution(self):
         return list(set([tuple(self.population._chromosome.parameters(c)) for c in self.get_fittest_chromosome()]))
 
-    def evolve(self, verbose=False, return_log=False, *kwargs):
+    def evolve(self, verbose=False, return_log=False, **kwargs):
         if return_log:
             log = []
 
