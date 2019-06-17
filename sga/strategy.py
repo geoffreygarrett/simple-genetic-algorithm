@@ -73,12 +73,41 @@ class EvolutionaryStrategy(object):
 
         self.population_fitness = self.population.calculate_fitness(self.fitness_function, archive=self._archive, **kwargs)
 
-        self._archive = self._archive.append(pd.DataFrame({
-            "fitness": self.population_fitness,
-            "chromosome": self.population.contestants
-        }))
-
         while self.termination_criteria(self.population_fitness, self.generation_number) is False:
+
+            if verbose:
+                print("GEN: ",
+                      str(self.generation_number).ljust(5),
+                      "   ||   ",
+                      "MAX_FIT: ",
+                      str(np.round(self.get_maximum_fitness(), 4)).ljust(10),
+                      "   ||   ",
+                      "MIN_FIT: ",
+                      str(np.round(self.get_minimum_fitness(), 4)).ljust(10),
+                      "   ||   ",
+                      "AVG_FIT: ",
+                      str(np.round(self.get_average_fitness(), 4)).ljust(10),
+                      "   ||   ",
+                      "CHROMOSOME: ",
+                      str(self.get_fittest_chromosome()).ljust(15),
+                      "   ||   ",
+                      "BEST_SOLN: ",
+                      str(self.get_fittest_solution()),
+                      ),
+
+            if return_log:
+                log.append([self.generation_number,
+                            np.round(self.get_maximum_fitness(), 3),
+                            np.round(self.get_minimum_fitness(), 3),
+                            np.round(self.get_average_fitness(), 3),
+                            self.get_fittest_chromosome()[0],
+                            np.round(self.get_fittest_solution()[0], 3)])
+
+            self._archive = self._archive.append(pd.DataFrame({
+                "fitness": self.population_fitness,
+                "chromosome": self.population.contestants,
+                "generation": [self.generation_number] * len(self.population.contestants)
+            })).drop_duplicates()
 
             # Make children from first initial generation of (16)
             self.children = self.perform_crossover(self.population)
@@ -101,38 +130,6 @@ class EvolutionaryStrategy(object):
 
             # Increase gen count.
             self.generation_number += 1
-
-            if verbose:
-                print("GEN: ",
-                      str(self.generation_number).ljust(5),
-                      "   ||   ",
-                      "MAX_FIT: ",
-                      str(np.round(self.get_maximum_fitness(), 4)).ljust(10),
-                      "   ||   ",
-                      "MIN_FIT: ",
-                      str(np.round(self.get_minimum_fitness(), 4)).ljust(10),
-                      "   ||   ",
-                      "AVG_FIT: ",
-                      str(np.round(self.get_average_fitness(), 4)).ljust(10),
-                      "   ||   ",
-                      "CHROMOSOME: ",
-                      str(self.get_fittest_chromosome()).ljust(15),
-                      "   ||   ",
-                      "BEST_SOLN: ",
-                      str(self.get_fittest_solution()),
-                      ),
-            if return_log:
-                log.append([self.generation_number,
-                            np.round(self.get_maximum_fitness(), 3),
-                            np.round(self.get_minimum_fitness(), 3),
-                            np.round(self.get_average_fitness(), 3),
-                            self.get_fittest_chromosome()[0],
-                            np.round(self.get_fittest_solution()[0], 3)])
-
-            self._archive = self._archive.append(pd.DataFrame({
-                "fitness": self.population_fitness,
-                "chromosome": self.population.contestants
-            })).drop_duplicates()
 
         if verbose:
             print("\n" + "--" * 100 + "\n")
