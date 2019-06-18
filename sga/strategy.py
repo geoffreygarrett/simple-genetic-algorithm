@@ -22,7 +22,6 @@ class EvolutionaryStrategy(object):
         self.mutation_rate = mutation_rate
         self.generation_number = 0
         self.children = None
-        self._current_population_fitness = None
         self._archive = pd.DataFrame(columns=["fitness", "chromosome"])
 
     def perform_crossover(self, population, *args):
@@ -40,29 +39,18 @@ class EvolutionaryStrategy(object):
         population.contestants = list(selected)
         population.fitness = list(np.array(population.fitness)[idx_selected])
 
-    @property
-    def population_fitness(self):
-        return self._current_population_fitness
-
-    @population_fitness.setter
-    def population_fitness(self, x):
-        self._current_population_fitness = x
-
-    # def calculate_current_population_fitness(self):
-    #     return self.population.fitness(self.fitness_function)
-
     def get_average_fitness(self):
-        return float(np.mean(self.population_fitness))
+        return float(np.mean(self.population.fitness))
 
     def get_maximum_fitness(self):
-        return np.max(self.population_fitness)
+        return np.max(self.population.fitness)
 
     def get_minimum_fitness(self):
-        return np.min(self.population_fitness)
+        return np.min(self.population.fitness)
 
     def get_fittest_chromosome(self):
         return list(set(np.array(self.population.contestants)[
-                            np.array(self.population_fitness) == self.get_maximum_fitness()]))
+                            np.array(self.population.fitness) == self.get_maximum_fitness()]))
 
     def get_fittest_solution(self):
         return list(set([tuple(self.population._chromosome.parameters(c)) for c in self.get_fittest_chromosome()]))
@@ -71,9 +59,9 @@ class EvolutionaryStrategy(object):
         if return_log:
             log = []
 
-        self.population_fitness = self.population.calculate_fitness(self.fitness_function, archive=self._archive, **kwargs)
+        self.population.fitness = self.population.calculate_fitness(self.fitness_function, archive=self._archive, **kwargs)
 
-        while self.termination_criteria(self.population_fitness, self.generation_number) is False:
+        while self.termination_criteria(self.population.fitness, self.generation_number) is False:
 
             if verbose:
                 print("GEN: ",
@@ -104,7 +92,7 @@ class EvolutionaryStrategy(object):
                             np.round(self.get_fittest_solution()[0], 3)])
 
             self._archive = self._archive.append(pd.DataFrame({
-                "fitness": self.population_fitness,
+                "fitness": self.population.fitness,
                 "chromosome": self.population.contestants,
                 "generation": [self.generation_number] * len(self.population.contestants)
             })).drop_duplicates()
@@ -119,14 +107,10 @@ class EvolutionaryStrategy(object):
             self.population.contestants += self.children.contestants
 
             # Calculate and add the children fitness to population list.
-            self.population_fitness += self.children.calculate_fitness(self.fitness_function, archive=self._archive, **kwargs)
-
-            self.population.fitness = self.population_fitness
+            self.population.fitness += self.children.calculate_fitness(self.fitness_function, archive=self._archive, **kwargs)
 
             # Comment.
             self.perform_selection(self.population)
-
-            self.population_fitness = self.population.fitness
 
             # Increase gen count.
             self.generation_number += 1
