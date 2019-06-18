@@ -43,13 +43,9 @@ class EvolutionaryStrategy(object):
         return float(np.mean(self.population.fitness))
 
     def get_maximum_fitness(self):
-        print("MAXIMUM", self.population.fitness)
-        print("TYPE", type(self.population.fitness))
         return np.max(self.population.fitness)
 
     def get_minimum_fitness(self):
-        print("MINIMUM", self.population.fitness)
-        print("TYPE", type(self.population.fitness))
         return np.min(self.population.fitness)
 
     def get_fittest_chromosome(self):
